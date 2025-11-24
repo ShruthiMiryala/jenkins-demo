@@ -4,20 +4,20 @@ pipeline {
     stages {
         stage('Clone from GitHub') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/ShruthiMiryala/jenkins-demo.git'
+                git 'https://github.com/ShruthiMiryala/jenkins-demo.git'
             }
         }
 
         stage('Build with Maven') {
             steps {
-                bat 'mvn clean install'
+                bat "mvn clean install -DskipTests"
             }
         }
 
         stage('Run Application') {
             steps {
-                bat 'java -cp target/classes com.shruthi.jenkins_demo.App'
+                bat "mvn exec:java -Dexec.mainClass=com.shruthi.jenkins_demo.App"
+                echo "🎉 Application ran successfully!"
             }
         }
     }
