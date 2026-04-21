@@ -1,0 +1,297 @@
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "assignment_exchange";
+const QUEUE = "assignment_queue";
+const ROUTING_KEY = "assignment_submitted";
+
+async function consumer() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "direct", { durable: true });
+    await channel.assertQueue(QUEUE, { durable: true });
+    await channel.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY);
+
+    console.log("Waiting for messages...");
+
+    channel.consume(QUEUE, (msg) => {
+        if (msg) {
+            console.log("Confirmation:", msg.content.toString());
+            channel.ack(msg);
+        }
+    });
+}
+
+consumer();
+
+
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "assignment_exchange";
+const ROUTING_KEY = "assignment_submitted";
+
+async function producer() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "direct", { durable: true });
+
+    const message = "Assignment submitted successfully";
+
+    channel.publish(EXCHANGE, ROUTING_KEY, Buffer.from(message), {
+        persistent: true
+    });
+
+    console.log("Sent:", message);
+
+    setTimeout(() => {
+        connection.close();
+        process.exit(0);
+    }, 500);
+}
+
+producer();
+
+----------------------------------------
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "logs_exchange";
+const QUEUE = "logs_queue";
+const ROUTING_KEY = "logs";
+
+async function consumer() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "direct", { durable: true });
+    await channel.assertQueue(QUEUE, { durable: true });
+    await channel.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY);
+
+    channel.prefetch(1);
+
+    console.log("Consumer waiting for logs...");
+
+    channel.consume(QUEUE, (msg) => {
+        if (msg) {
+            const data = JSON.parse(msg.content.toString());
+
+            console.log(`[${data.module}] -> ${data.message}`);
+
+            channel.ack(msg);
+        }
+    });
+}
+
+consumer();
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "logs_exchange";
+const ROUTING_KEY = "logs";
+
+async function sendAuthLog() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "direct", { durable: true });
+
+    const log = {
+        module: "Authentication",
+        message: "User logged in"
+    };
+
+    channel.publish(
+        EXCHANGE,
+        ROUTING_KEY,
+        Buffer.from(JSON.stringify(log)),
+        { persistent: true }
+    );
+
+    console.log("Auth log sent");
+
+    setTimeout(() => {
+        connection.close();
+        process.exit(0);
+    }, 500);
+}
+
+sendAuthLog();
+
+
+
+
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "logs_exchange";
+const ROUTING_KEY = "logs";
+
+async function sendNotificationLog() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "direct", { durable: true });
+
+    const log = {
+        module: "Notifications",
+        message: "Email sent"
+    };
+
+    channel.publish(
+        EXCHANGE,
+        ROUTING_KEY,
+        Buffer.from(JSON.stringify(log)),
+        { persistent: true }
+    );
+
+    console.log("Notification log sent");
+
+    setTimeout(() => {
+        connection.close();
+        process.exit(0);
+    }, 500);
+}
+
+sendNotificationLog();
+
+
+
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "logs_exchange";
+const ROUTING_KEY = "logs";
+
+async function sendPaymentLog() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "direct", { durable: true });
+
+    const log = {
+        module: "Payments",
+        message: "Payment successful"
+    };
+
+    channel.publish(
+        EXCHANGE,
+        ROUTING_KEY,
+        Buffer.from(JSON.stringify(log)),
+        { persistent: true }
+    );
+
+    console.log("Payment log sent");
+
+    setTimeout(() => {
+        connection.close();
+        process.exit(0);
+    }, 500);
+}
+
+sendPaymentLog();
+
+
+
+
+-------------------------------
+
+
+
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "announcement_exchange";
+const QUEUE = "admin_queue";
+
+async function adminConsumer() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "fanout", { durable: true });
+
+    const q = await channel.assertQueue(QUEUE, { durable: true });
+
+    await channel.bindQueue(q.queue, EXCHANGE, "");
+
+    console.log("Admin waiting for announcements...");
+
+    channel.consume(q.queue, (msg) => {
+        if (msg) {
+            console.log("[ADMIN RECEIVED]:", msg.content.toString());
+            channel.ack(msg);
+        }
+    });
+}
+
+adminConsumer();
+
+
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "announcement_exchange";
+const QUEUE = "student_queue";
+
+async function studentConsumer() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "fanout", { durable: true });
+
+    const q = await channel.assertQueue(QUEUE, { durable: true });
+
+    await channel.bindQueue(q.queue, EXCHANGE, "");
+
+    console.log("Students waiting for announcements...");
+
+    channel.consume(q.queue, (msg) => {
+        if (msg) {
+            console.log("[STUDENT RECEIVED]:", msg.content.toString());
+            channel.ack(msg);
+        }
+    });
+}
+
+studentConsumer();
+
+
+
+
+const amqp = require("amqplib");
+
+const URL = "amqp://localhost";
+const EXCHANGE = "announcement_exchange";
+
+async function publish() {
+    const connection = await amqp.connect(URL);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(EXCHANGE, "fanout", { durable: true });
+
+    const message = "Important Announcement: College will be closed tomorrow";
+
+    channel.publish(EXCHANGE, "", Buffer.from(message), {
+        persistent: true
+    });
+
+    console.log("Announcement sent:", message);
+
+    setTimeout(() => {
+        connection.close();
+        process.exit(0);
+    }, 500);
+}
+
+publish();
+--------------------------
+
